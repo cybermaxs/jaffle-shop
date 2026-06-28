@@ -1,6 +1,5 @@
 target/
 dbt_packages/
-profiles.yml
 logs/
 .venv/
 .user.yml

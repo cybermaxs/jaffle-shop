@@ -1,0 +1,36 @@
+jaffle_shop:
+  outputs:
+    dev:
+      type: snowflake
+      account: "{{ env_var('DBT_SNOWFLAKE_ACCOUNT') }}"
+      user: "{{ env_var('DBT_USER') }}"
+      password: "{{ env_var('DBT_PASSWORD') }}"
+      role: "DBT_ROLE"
+      database: "{{ env_var('DBT_DATABASE') }}"
+      warehouse: "DBT_COMPUTE_WH"
+      schema: "{{ env_var('DBT_SCHEMA') }}"
+      threads: 4
+
+    ci:
+      type: snowflake
+      account: "{{ env_var('DBT_SNOWFLAKE_ACCOUNT') }}"
+      user: "{{ env_var('DBT_USER') }}"
+      password: "{{ env_var('DBT_PASSWORD') }}"
+      role: "DBT_ROLE"
+      database: "{{ env_var('DBT_DATABASE') }}"
+      warehouse: "DBT_COMPUTE_WH"
+      schema: "{{ env_var('DBT_SCHEMA') }}"
+      threads: 4
+
+    prod:
+      type: snowflake
+      account: "{{ env_var('DBT_SNOWFLAKE_ACCOUNT') }}"
+      user: "{{ env_var('DBT_USER') }}"
+      password: "{{ env_var('DBT_PASSWORD') }}"
+      role: "DBT_ROLE"
+      database: "{{ env_var('DBT_DATABASE') }}"
+      warehouse: "DBT_COMPUTE_WH"
+      schema: "{{ env_var('DBT_SCHEMA') }}"
+      threads: 8
+
+  target: dev

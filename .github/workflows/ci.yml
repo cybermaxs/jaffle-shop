@@ -1,0 +1,74 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+
+env:
+  DBT_PROFILES_DIR: .
+  DBT_SNOWFLAKE_ACCOUNT: ${{ secrets.DBT_SNOWFLAKE_ACCOUNT }}
+  DBT_USER: ${{ secrets.DBT_USER }}
+  DBT_PASSWORD: ${{ secrets.DBT_PASSWORD }}
+  DBT_DATABASE: ${{ secrets.DBT_DATABASE }}
+  DBT_SCHEMA: CI_PR_${{ github.event.pull_request.number }}
+
+jobs:
+  dbt-ci:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+
+      - name: Install dependencies
+        run: uv sync
+
+      - name: dbt deps
+        run: uv run dbt deps
+
+      - name: dbt compile
+        run: uv run dbt compile --target ci
+
+      - name: Download prod manifest
+        id: prod-manifest
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          run_id=$(gh run list \
+            --repo "${{ github.repository }}" \
+            --workflow=cd.yml \
+            --branch=main \
+            --status=success \
+            --limit=1 \
+            --json databaseId \
+            -q '.[0].databaseId')
+
+          if [ -z "$run_id" ]; then
+            echo "No successful prod run found, skipping manifest download"
+            exit 1
+          fi
+
+          mkdir -p prod-manifest
+          gh run download "$run_id" \
+            --repo "${{ github.repository }}" \
+            --name dbt-prod-manifest \
+            --dir prod-manifest
+
+      - name: dbt source freshness
+        run: uv run dbt source freshness --target ci
+
+      - name: dbt slim build (state:modified+)
+        if: steps.prod-manifest.outcome == 'success'
+        run: |
+          uv run dbt build \
+            --select "state:modified+" \
+            --defer \
+            --state prod-manifest \
+            --target ci
+
+      - name: dbt full build (no prod manifest available)
+        if: steps.prod-manifest.outcome != 'success'
+        run: uv run dbt build --target ci
