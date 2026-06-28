@@ -1,0 +1,1 @@
+The Jaffle Shop adapted to dbt-core, github and Snowflake
